@@ -1,4 +1,5 @@
 import groovy.util.Node
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     `java-gradle-plugin`
@@ -14,15 +15,27 @@ description = "A Gradle plugin to remap Java source code like one would remap Ja
 val url = "https://github.com/mikroskeem/SourceTransformer"
 
 val inriaSpoonCoreVersion = "6.2.0"
+val srgLibVersion = "0.1.2"
 
 repositories {
     mavenLocal()
     mavenCentral()
     jcenter()
+
+    maven("https://repo.techcable.net/content/repositories/releases")
 }
 
 dependencies {
     implementation("fr.inria.gforge.spoon:spoon-core:$inriaSpoonCoreVersion")
+    implementation("net.techcable:srglib:$srgLibVersion")
+}
+
+tasks.withType<KotlinCompile> {
+    kotlinOptions {
+        jvmTarget = "1.8"
+        apiVersion = "1.2"
+        languageVersion = "1.2"
+    }
 }
 
 license {
@@ -56,6 +69,11 @@ publishing {
                         "repository" {
                             "id"("mikroskeem-repo")
                             "url"("https://repo.wut.ee/repository/mikroskeem-repo")
+                        }
+
+                        "repository" {
+                            "id"("techcable-repo")
+                            "url"("https://repo.techcable.net/content/repositories/releases")
                         }
                     }
                 }

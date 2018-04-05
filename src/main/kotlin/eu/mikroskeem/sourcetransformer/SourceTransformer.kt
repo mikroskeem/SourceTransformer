@@ -25,16 +25,62 @@
 
 package eu.mikroskeem.sourcetransformer
 
+import eu.mikroskeem.sourcetransformer.transformer.CodeTransformer
+import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.plugins.JavaBasePlugin
+import org.gradle.api.tasks.TaskAction
+import org.gradle.kotlin.dsl.task
+import java.io.File
 
 /**
  * Source code transformer plugin
  *
  * @author Mark Vainomaa
  */
-class SourceTransformer: Plugin<Project> {
+open class SourceTransformer: Plugin<Project> {
     override fun apply(project: Project) {
+        // Check if Java plugin exists
+        if(!project.plugins.hasPlugin(JavaBasePlugin::class.java))
+            throw IllegalStateException("SourceTransformer plugin is useful only on Java projects")
 
+        val transformerDirections =
+                project.extensions.create("sourceTransformer", SourceTransformerExtension::class.java)
+
+        project.run {
+            val transformTask = task<SourceTransformerTask>("transformSources") {
+                doFirst {
+                    transformerDirections.validate()
+                }
+            }
+        }
+    }
+}
+
+open class SourceTransformerExtension {
+    var mappingsFile: File? = null
+    var sourceDir: File? = null
+    var targetDir: File? = null
+
+    internal fun validate() {
+        if(mappingsFile == null || !mappingsFile!!.isFile)
+            throw IllegalStateException("Mappings are not either present or not provided")
+
+        if(sourceDir == null || !sourceDir!!.isDirectory)
+            throw IllegalStateException("Source directory is not present or is not a directory")
+
+        if(targetDir == null || !targetDir!!.isDirectory)
+            throw IllegalStateException("Target directory is not present or is not a directory")
+    }
+}
+
+open class SourceTransformerTask: DefaultTask() {
+    @TaskAction
+    fun transformSources() {
+        val directions = project.extensions.getByType(SourceTransformerExtension::class.java)
+        val transformer = directions.run { CodeTransformer(sourceDir!!, targetDir!!, mappingsFile!!) }
+
+        transformer.process()
     }
 }
